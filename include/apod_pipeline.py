@@ -389,84 +389,84 @@ class APODPipeline:
             # Always return to original directory
             os.chdir(original_dir)
     
-def commit_to_git(self) -> None:
-    """
-    Step 5: Commit DVC metadata to Git repository
-    
-    Commits .dvc file and updated .gitignore to Git
-    """
-    logger.info("="*60)
-    logger.info("STEP 5: COMMITTING TO GIT")
-    logger.info("="*60)
-    
-    try:
-        # Change to airflow directory
-        original_dir = os.getcwd()
-        os.chdir('/usr/local/airflow')
+    def commit_to_git(self) -> None:
+        """
+        Step 5: Commit DVC metadata to Git repository
         
-        # Check Git status
-        status_result = subprocess.run(
-            ['git', 'status', '--short'],
-            capture_output=True,
-            text=True
-        )
-        logger.info(f"Git status:\n{status_result.stdout}")
+        Commits .dvc file and updated .gitignore to Git
+        """
+        logger.info("="*60)
+        logger.info("STEP 5: COMMITTING TO GIT")
+        logger.info("="*60)
         
-        # Add DVC metadata files
-        logger.info("Adding DVC files to Git...")
-        subprocess.run(
-            ['git', 'add', 'include/apod_data.csv.dvc', '.gitignore'],
-            check=True
-        )
-        
-        # Create commit message with timestamp
-        commit_message = f"Update APOD data - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        
-        # Commit changes
-        logger.info(f"Committing: {commit_message}")
-        result = subprocess.run(
-            ['git', 'commit', '-m', commit_message],
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        
-        if result.returncode == 0:
-            logger.info(f"✓ Successfully committed to Git")
-            logger.info(f"  - Message: {commit_message}")
-            logger.info(f"  - Output: {result.stdout}")
+        try:
+            # Change to airflow directory
+            original_dir = os.getcwd()
+            os.chdir('/usr/local/airflow')
             
-            # Push to remote repository
-            logger.info("Pushing to remote repository...")
-            push_result = subprocess.run(
-                ['git', 'push', 'origin', 'main'],
+            # Check Git status
+            status_result = subprocess.run(
+                ['git', 'status', '--short'],
+                capture_output=True,
+                text=True
+            )
+            logger.info(f"Git status:\n{status_result.stdout}")
+            
+            # Add DVC metadata files
+            logger.info("Adding DVC files to Git...")
+            subprocess.run(
+                ['git', 'add', 'include/apod_data.csv.dvc', '.gitignore'],
+                check=True
+            )
+            
+            # Create commit message with timestamp
+            commit_message = f"Update APOD data - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            
+            # Commit changes
+            logger.info(f"Committing: {commit_message}")
+            result = subprocess.run(
+                ['git', 'commit', '-m', commit_message],
                 capture_output=True,
                 text=True,
                 check=False
             )
             
-            if push_result.returncode == 0:
-                logger.info(f"✓ Successfully pushed to GitHub")
-            else:
-                logger.warning(f"⚠ Git push failed: {push_result.stderr}")
-                logger.warning("This might be due to authentication. Commit succeeded locally.")
+            if result.returncode == 0:
+                logger.info(f"✓ Successfully committed to Git")
+                logger.info(f"  - Message: {commit_message}")
+                logger.info(f"  - Output: {result.stdout}")
                 
-        elif "nothing to commit" in result.stdout:
-            logger.info("ℹ No changes to commit (data unchanged)")
-        else:
-            logger.warning(f"Git commit returned code {result.returncode}")
-            logger.warning(f"  - stdout: {result.stdout}")
-            logger.warning(f"  - stderr: {result.stderr}")
-        
-        logger.info("="*60)
-        
-        # Return to original directory
-        os.chdir(original_dir)
-        
-    except Exception as e:
-        logger.error(f"✗ Git commit failed: {str(e)}")
-        os.chdir(original_dir)
-        raise
+                # Push to remote repository
+                logger.info("Pushing to remote repository...")
+                push_result = subprocess.run(
+                    ['git', 'push', 'origin', 'main'],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                
+                if push_result.returncode == 0:
+                    logger.info(f"✓ Successfully pushed to GitHub")
+                else:
+                    logger.warning(f"⚠ Git push failed: {push_result.stderr}")
+                    logger.warning("This might be due to authentication. Commit succeeded locally.")
+                    
+            elif "nothing to commit" in result.stdout:
+                logger.info("ℹ No changes to commit (data unchanged)")
+            else:
+                logger.warning(f"Git commit returned code {result.returncode}")
+                logger.warning(f"  - stdout: {result.stdout}")
+                logger.warning(f"  - stderr: {result.stderr}")
+            
+            logger.info("="*60)
+            
+            # Return to original directory
+            os.chdir(original_dir)
+            
+        except Exception as e:
+            logger.error(f"✗ Git commit failed: {str(e)}")
+            os.chdir(original_dir)
+            raise
 
 # Convenience functions for Airflow tasks
 def extract_task():
