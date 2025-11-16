@@ -45,11 +45,11 @@ def transform_data_task(**context):
         task_ids='extract_apod_data',
         key='raw_data'
     )
-    df = pipeline.transform_data(raw_data)
-    # Convert DataFrame to dict for XCom
-    df_dict = df.to_dict('records')[0]
-    context['task_instance'].xcom_push(key='transformed_data', value=df_dict)
-    return df_dict
+    data_list = pipeline.transform_data(raw_data)
+    # Extract the first (and only) record from the list
+    data_dict = data_list[0]
+    context['task_instance'].xcom_push(key='transformed_data', value=data_dict)
+    return data_dict
 
 def load_postgres_task(**context):
     """Load data to PostgreSQL"""
