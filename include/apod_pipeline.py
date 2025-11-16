@@ -36,7 +36,7 @@ class APODPipeline:
     
     def __init__(self):
         self.api_url = "https://api.nasa.gov/planetary/apod"
-        self.api_key = "DEMO_KEY"
+        self.api_key = "BTvi9l7qiB0OhZMBoc44YAYxjaE5p6e94YGLm2zK"
         self.csv_path = "/usr/local/airflow/include/apod_data.csv"
         self.dvc_file_path = "/usr/local/airflow/include/apod_data.csv.dvc"
         
