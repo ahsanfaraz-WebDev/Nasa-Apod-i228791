@@ -331,6 +331,73 @@ class APODPipeline:
             if not os.path.exists(self.csv_path):
                 raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
             
+            # Initialize Git repository if not already initialized
+            if not os.path.exists('.git'):
+                logger.info("Initializing Git repository...")
+                git_init = subprocess.run(
+                    ['git', 'init'],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if git_init.returncode != 0:
+                    logger.warning(f"Git init warning: {git_init.stderr}")
+                else:
+                    logger.info("✓ Git repository initialized")
+            
+            # Initialize DVC repository if not already initialized
+            if not os.path.exists('.dvc'):
+                logger.info("Initializing DVC repository...")
+                # DVC requires Git, so ensure Git is initialized first
+                if not os.path.exists('.git'):
+                    logger.info("Git not found, initializing Git first...")
+                    git_init = subprocess.run(
+                        ['git', 'init'],
+                        capture_output=True,
+                        text=True,
+                        check=True
+                    )
+                    logger.info("✓ Git repository initialized for DVC")
+                
+                dvc_init = subprocess.run(
+                    ['dvc', 'init'],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if dvc_init.returncode != 0:
+                    # Try with --no-scm if regular init fails
+                    logger.info("Retrying DVC init with --no-scm flag...")
+                    dvc_init = subprocess.run(
+                        ['dvc', 'init', '--no-scm'],
+                        capture_output=True,
+                        text=True,
+                        check=False
+                    )
+                    if dvc_init.returncode != 0:
+                        logger.error(f"DVC init failed: {dvc_init.stderr}")
+                        raise Exception(f"DVC init failed: {dvc_init.stderr}")
+                logger.info("✓ DVC repository initialized")
+            
+            # Configure DVC remote if not already configured
+            remote_check = subprocess.run(
+                ['dvc', 'remote', 'list'],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            if 'localstorage' not in remote_check.stdout:
+                logger.info("Configuring DVC remote storage...")
+                # Add local storage remote
+                subprocess.run(
+                    ['dvc', 'remote', 'add', '-d', 'localstorage', '../.dvc-storage'],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                logger.info("✓ DVC remote configured")
+            
             logger.info(f"Adding file to DVC: {self.csv_path}")
             
             # Add file to DVC
@@ -345,6 +412,48 @@ class APODPipeline:
                 # Check if it's already tracked
                 if "is already tracked" in result.stderr or "is already tracked" in result.stdout:
                     logger.info("File already tracked by DVC, updating...")
+                    # Try to update instead
+                    result = subprocess.run(
+                        ['dvc', 'add', 'include/apod_data.csv', '--force'],
+                        capture_output=True,
+                        text=True,
+                        check=False
+                    )
+                    if result.returncode != 0:
+                        logger.error(f"DVC update stderr: {result.stderr}")
+                        logger.error(f"DVC update stdout: {result.stdout}")
+                        raise Exception(f"DVC add failed: {result.stderr}")
+                elif "not inside of a DVC repository" in result.stderr:
+                    # Retry initialization and add
+                    logger.info("Retrying DVC initialization...")
+                    # Ensure Git is initialized
+                    if not os.path.exists('.git'):
+                        subprocess.run(['git', 'init'], capture_output=True, text=True, check=True)
+                    # Try regular init first
+                    dvc_init = subprocess.run(
+                        ['dvc', 'init'],
+                        capture_output=True,
+                        text=True,
+                        check=False
+                    )
+                    # If that fails, try with --no-scm
+                    if dvc_init.returncode != 0:
+                        dvc_init = subprocess.run(
+                            ['dvc', 'init', '--no-scm'],
+                            capture_output=True,
+                            text=True,
+                            check=True
+                        )
+                    result = subprocess.run(
+                        ['dvc', 'add', 'include/apod_data.csv'],
+                        capture_output=True,
+                        text=True,
+                        check=False
+                    )
+                    if result.returncode != 0:
+                        logger.error(f"DVC stderr: {result.stderr}")
+                        logger.error(f"DVC stdout: {result.stdout}")
+                        raise Exception(f"DVC add failed: {result.stderr}")
                 else:
                     logger.error(f"DVC stderr: {result.stderr}")
                     logger.error(f"DVC stdout: {result.stdout}")

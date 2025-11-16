@@ -14,4 +14,3 @@ gitpython==3.1.40
 
 # Utilities
 python-dateutil==2.8.2
-astro-run-dag # This package is needed for the astro run command. It will be removed before a deploy
